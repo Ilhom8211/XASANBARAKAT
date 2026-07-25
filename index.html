@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ваш Магазин</title>
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet.js Interactive Map CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Initial App Preloader Splash Screen -->
+    <div class="app-preloader" id="appPreloader">
+        <div class="preloader-content">
+            <div class="preloader-logo-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <h1 class="preloader-title">Ваш Магазин</h1>
+            <div class="preloader-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Main App Frame -->
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-top">
+                <div class="brand-info">
+                    <div class="brand-logo-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                        </svg>
+                    </div>
+                    <h1 class="brand-title">Ваш Магазин</h1>
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container">
+                <div class="search-input-wrapper">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Поиск блюд..." autocomplete="off">
+                    <button class="search-clear-btn" id="searchClearBtn" aria-label="Очистить поиск">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Horizontal Categories Bar -->
+            <nav class="categories-nav">
+                <div class="categories-scroll" id="categoriesContainer">
+                    <!-- Categories injected by JS -->
+                </div>
+            </nav>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Section Header -->
+            <div class="section-meta">
+                <span class="active-category-title" id="activeCategoryTitle">Все меню</span>
+                <span class="product-count" id="productCount">0 блюд</span>
+            </div>
+
+            <!-- Products Grid (2 Cards per Row) -->
+            <div class="products-grid" id="productsGrid">
+                <!-- Product cards injected by JS -->
+            </div>
+
+            <!-- Empty Search State -->
+            <div class="empty-state hidden" id="emptyState">
+                <div class="empty-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <line x1="8" y1="11" x2="14" y2="11"></line>
+                    </svg>
+                </div>
+                <h3>Ничего не найдено</h3>
+                <p>Попробуйте изменить поисковый запрос или выбрать другую категорию</p>
+            </div>
+        </main>
+
+        <!-- Floating Round Cart Button (Bottom Right) -->
+        <button class="cart-fab-round ripple-btn" id="cartFab" aria-label="Корзина">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span class="cart-fab-badge" id="cartFabBadge">0</span>
+        </button>
+
+    </div>
+
+    <!-- Bottom Sheet Backdrop -->
+    <div class="sheet-backdrop" id="sheetBackdrop"></div>
+
+    <!-- Bottom Sheet Container -->
+    <div class="bottom-sheet" id="bottomSheet">
+        <!-- Drag bar handle -->
+        <div class="sheet-drag-handle">
+            <div class="drag-bar"></div>
+        </div>
+
+        <div class="sheet-header">
+            <div class="sheet-header-title">
+                <h2>Ваш заказ</h2>
+                <span class="sheet-items-count" id="sheetItemsCount">0 позиций</span>
+            </div>
+            <button class="sheet-close-btn ripple-btn" id="sheetCloseBtn" aria-label="Закрыть">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+
+        <div class="sheet-content">
+            <!-- Selected Cart Items List -->
+            <div class="cart-items-list" id="cartItemsList">
+                <!-- Dynamic cart item items injected here -->
+            </div>
+
+            <!-- Empty Cart View inside Sheet -->
+            <div class="empty-cart-view hidden" id="emptyCartView">
+                <div class="empty-cart-icon">
+                    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <path d="M16 10a4 4 0 0 1-8 0"></path>
+                    </svg>
+                </div>
+                <h3>Корзина пуста</h3>
+                <p>Нажмите на любую карточку блюда, чтобы добавить его в заказ</p>
+            </div>
+
+            <!-- Order Form Section -->
+            <div class="order-form-section" id="orderFormSection">
+                <h3 class="form-title">Детали доставки</h3>
+                
+                <form id="checkoutForm" onsubmit="return false;">
+                    
+                    <!-- Имя -->
+                    <div class="input-group">
+                        <label for="inputFirstName">Имя</label>
+                        <div class="input-wrapper">
+                            <svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <input type="text" id="inputFirstName" placeholder="Введите ваше имя" required>
+                        </div>
+                    </div>
+
+                    <!-- Телефон -->
+                    <div class="input-group">
+                        <label for="inputPhone">Телефон</label>
+                        <div class="input-wrapper">
+                            <svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            <input type="tel" id="inputPhone" placeholder="+7-707-123-4567" required autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <!-- Местоположение -->
+                    <div class="input-group">
+                        <label for="inputLocation">Местоположение</label>
+                        <div class="input-wrapper">
+                            <svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            <input type="text" id="inputLocation" placeholder="Улица и дом" required>
+                        </div>
+                    </div>
+
+                    <!-- Location Action Buttons -->
+                    <div class="location-buttons-row">
+                        <button type="button" class="loc-btn loc-btn-geo ripple-btn" id="geoBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                            </svg>
+                            <span>Мое местоположение</span>
+                        </button>
+
+                        <button type="button" class="loc-btn loc-btn-map ripple-btn" id="openMapBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                                <line x1="8" y1="2" x2="8" y2="18"></line>
+                                <line x1="16" y1="6" x2="16" y2="22"></line>
+                            </svg>
+                            <span>Открыть карту</span>
+                        </button>
+                    </div>
+
+                    <!-- Price Summary Box -->
+                    <div class="price-summary-box">
+                        <div class="summary-line">
+                            <span>Товары (<span id="summaryCount">0</span>)</span>
+                            <span id="summarySubtotal">0 ₸</span>
+                        </div>
+                        <div class="summary-line">
+                            <span>Доставка</span>
+                            <span class="free-delivery">Бесплатно</span>
+                        </div>
+                        <div class="summary-divider"></div>
+                        <div class="summary-line total-line">
+                            <span>К оплате</span>
+                            <span class="total-price" id="summaryTotal">0 ₸</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Order Button -->
+                    <button type="submit" class="submit-order-btn ripple-btn" id="submitOrderBtn">
+                        <span>Готово</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Leaflet Map Modal Overlay -->
+    <div class="map-modal-overlay hidden" id="mapModalOverlay">
+        <div class="map-modal-card">
+            <div class="map-modal-header">
+                <div class="map-modal-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                        <line x1="8" y1="2" x2="8" y2="18"></line>
+                        <line x1="16" y1="6" x2="16" y2="22"></line>
+                    </svg>
+                    <h3>Выберите место на карте</h3>
+                </div>
+                <button class="map-modal-close" id="mapModalCloseBtn" aria-label="Закрыть карту">&times;</button>
+            </div>
+
+            <div class="map-view-wrapper">
+                <div id="leafletMap"></div>
+                <div class="map-center-pin">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="#10b981" stroke="#ffffff" stroke-width="1.8">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3" fill="#ffffff"></circle>
+                    </svg>
+                </div>
+                <button type="button" class="map-locate-btn" id="mapLocateSelfBtn" title="Мое местоположение">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="map-modal-footer">
+                <div class="map-address-box">
+                    <span class="map-address-label">Выбранное местоположение:</span>
+                    <div class="map-address-val" id="mapAddressVal">Передвиньте карту или нажмите на нужную точку...</div>
+                </div>
+                <button type="button" class="confirm-location-btn ripple-btn" id="confirmLocationBtn">
+                    <span>Подтвердить местоположение</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Modal Overlay -->
+    <div class="success-overlay hidden" id="successOverlay">
+        <div class="success-card">
+            <div class="success-icon-wrap">
+                <svg class="checkmark-svg" viewBox="0 0 52 52">
+                    <circle class="checkmark-circle" cx="26" cy="26" r="23" fill="none"/>
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+            </div>
+            <h2>Заказ принят!</h2>
+            <p>Спасибо! Мы уже начали готовить ваш вкуснейший заказ. Менеджер свяжется с вами в ближайшее время.</p>
+            <button class="success-close-btn ripple-btn" id="successCloseBtn">Отлично</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
