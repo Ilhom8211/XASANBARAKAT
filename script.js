@@ -4,7 +4,7 @@
 
 // Telegram Configuration (Replace with your actual Telegram Bot values)
 const BOT_TOKEN = "8833741545:AAHD5_kz49S1abXAKlraDsB-Vfwx98I4Z7I";
-const CHAT_ID = "-5511283434";
+const CHAT_ID = "-1004408655120";
 
 // Master Products Database Array (Prices in Kazakhstani Tenge ₸)
 const products = [
