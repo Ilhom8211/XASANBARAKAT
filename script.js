@@ -531,67 +531,159 @@ function setupPhoneInputFormatting() {
     });
 }
 
-// Geolocation Reverse Geocoding Helper
+// Multi-provider Geolocation Reverse Geocoding Helper
 async function fetchAccurateStreetAddress(lat, lng) {
+    // Attempt 1: OpenStreetMap Nominatim with timeout
     try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
             const data = await res.json();
             const addr = data.address || {};
-            const street = addr.road || addr.street || addr.suburb || addr.neighbourhood || addr.city || "";
+            const street = addr.road || addr.street || addr.suburb || addr.neighbourhood || addr.residential || "";
             const houseNumber = addr.house_number || "";
+            const city = addr.city || addr.town || addr.village || addr.county || "";
 
             if (street && houseNumber) {
                 return `${street}, ${houseNumber}`;
             } else if (street) {
-                return street;
+                return city ? `${street}, ${city}` : street;
             } else if (data.display_name) {
                 const parts = data.display_name.split(",");
                 return parts.slice(0, 2).join(",").trim();
             }
         }
     } catch (err) {
-        console.log("Geocoding fetch error:", err);
+        console.log("Nominatim reverse geocode failed, using fallback:", err);
     }
-    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+    // Attempt 2: BigDataCloud free reverse geocode API (Free, zero-key, CORS enabled)
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=ru`, {
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+            const data = await res.json();
+            const street = data.locality || data.city || data.principalSubdivision || "";
+            if (street) return street;
+        }
+    } catch (err) {
+        console.log("BigDataCloud reverse geocode failed:", err);
+    }
+
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
 
-// Accurate "Мое местоположение" GPS Handler
-async function handleGeolocation() {
-    if (!navigator.geolocation) {
-        alert("Геолокация не поддерживается вашим браузером.");
-        return;
+// IP-based Geolocation Fallback when device has no GPS or browser blocks GPS
+async function fetchIpLocation() {
+    try {
+        const res = await fetch("https://get.geojs.io/v1/ip/geo.json");
+        if (res.ok) {
+            const data = await res.json();
+            if (data.latitude && data.longitude) {
+                return {
+                    lat: parseFloat(data.latitude),
+                    lng: parseFloat(data.longitude),
+                    city: data.city || "Мой город"
+                };
+            }
+        }
+    } catch (e) {
+        console.log("IP location fetch 1 failed:", e);
     }
 
+    try {
+        const res = await fetch("https://ipapi.co/json/");
+        if (res.ok) {
+            const data = await res.json();
+            if (data.latitude && data.longitude) {
+                return {
+                    lat: parseFloat(data.latitude),
+                    lng: parseFloat(data.longitude),
+                    city: data.city || "Мой город"
+                };
+            }
+        }
+    } catch (e) {
+        console.log("IP location fetch 2 failed:", e);
+    }
+
+    return null;
+}
+
+// Accurate "Мое местоположение" GPS & IP Fallback Handler
+async function handleGeolocation() {
+    if (!geoBtn) return;
     geoBtn.disabled = true;
     const origText = geoBtn.querySelector("span").textContent;
     geoBtn.querySelector("span").textContent = "Определение...";
 
-    navigator.geolocation.getCurrentPosition(
-        async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
+    const setLocationResult = async (lat, lng) => {
+        generatedMapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
+        const address = await fetchAccurateStreetAddress(lat, lng);
+        inputLocation.value = address;
+        mapSelectedCoords = { lat, lng };
 
-            generatedMapsLink = `https://www.google.com/maps?q=${lat},${lng}`;
-            const address = await fetchAccurateStreetAddress(lat, lng);
-            inputLocation.value = address;
+        geoBtn.disabled = false;
+        geoBtn.querySelector("span").textContent = "Обновлено ✓";
+        setTimeout(() => {
+            geoBtn.querySelector("span").textContent = origText;
+        }, 2500);
+    };
 
-            geoBtn.disabled = false;
-            geoBtn.querySelector("span").textContent = "Обновлено ✓";
-            setTimeout(() => {
-                geoBtn.querySelector("span").textContent = origText;
-            }, 2500);
-        },
-        (error) => {
+    const tryIpFallback = async () => {
+        const ipLoc = await fetchIpLocation();
+        if (ipLoc) {
+            await setLocationResult(ipLoc.lat, ipLoc.lng);
+        } else {
             geoBtn.disabled = false;
             geoBtn.querySelector("span").textContent = origText;
-            let errMsg = "Ошибка при получении геолокации.";
-            if (error.code === error.PERMISSION_DENIED) {
-                errMsg = "Доступ к геолокации запрещен. Пожалуйста, разрешите доступ в настройках устройства.";
-            }
-            alert(errMsg);
+            alert("Не удалось автоматически определить местоположение. Пожалуйста, выберите место на карте.");
+            if (openMapBtn) openMapBtn.click();
+        }
+    };
+
+    if (!navigator.geolocation) {
+        await tryIpFallback();
+        return;
+    }
+
+    // Phase 1: High Accuracy GPS with 6s timeout
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            await setLocationResult(position.coords.latitude, position.coords.longitude);
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        async (error) => {
+            if (error.code === error.PERMISSION_DENIED) {
+                geoBtn.disabled = false;
+                geoBtn.querySelector("span").textContent = origText;
+                alert("Доступ к геолокации запрещен в настройках браузера. Открываем карту для выбора...");
+                if (openMapBtn) openMapBtn.click();
+            } else {
+                // Phase 2: Low Accuracy GPS or IP fallback
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        await setLocationResult(pos.coords.latitude, pos.coords.longitude);
+                    },
+                    async () => {
+                        await tryIpFallback();
+                    },
+                    { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+                );
+            }
+        },
+        { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
     );
 }
 
@@ -614,13 +706,13 @@ function initInteractiveMapModal() {
         document.body.style.overflow = "hidden";
 
         if (!leafletMap && window.L) {
-            // Default center: Almaty / Shymkent area
-            const startLat = 43.238949;
-            const startLng = 76.889709;
+            // Default center: Sayram / Shymkent area (42.3155, 69.6170) or previously saved coordinates
+            const initialLat = mapSelectedCoords ? mapSelectedCoords.lat : 42.3155;
+            const initialLng = mapSelectedCoords ? mapSelectedCoords.lng : 69.6170;
 
             leafletMap = L.map("leafletMap", {
                 zoomControl: false
-            }).setView([startLat, startLng], 14);
+            }).setView([initialLat, initialLng], 14);
 
             L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
                 maxZoom: 19,
@@ -638,23 +730,43 @@ function initInteractiveMapModal() {
                     mapAddressVal.textContent = "Загрузка адреса...";
                     mapAddressText = await fetchAccurateStreetAddress(center.lat, center.lng);
                     mapAddressVal.textContent = mapAddressText;
-                }, 350);
+                }, 300);
             };
 
             leafletMap.on("moveend", updateAddressFromCenter);
             leafletMap.on("click", (e) => {
                 leafletMap.panTo(e.latlng);
             });
+        } else if (leafletMap) {
+            if (mapSelectedCoords) {
+                leafletMap.setView([mapSelectedCoords.lat, mapSelectedCoords.lng], 15);
+            }
         }
 
         setTimeout(() => {
             if (leafletMap) leafletMap.invalidateSize();
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    if (leafletMap) leafletMap.setView([lat, lng], 16);
-                }, () => { }, { enableHighAccuracy: true, timeout: 6000 });
+            if (!mapSelectedCoords) {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        mapSelectedCoords = { lat, lng };
+                        if (leafletMap) leafletMap.setView([lat, lng], 16);
+                    }, async () => {
+                        const ipLoc = await fetchIpLocation();
+                        if (ipLoc && leafletMap) {
+                            mapSelectedCoords = { lat: ipLoc.lat, lng: ipLoc.lng };
+                            leafletMap.setView([ipLoc.lat, ipLoc.lng], 14);
+                        }
+                    }, { enableHighAccuracy: true, timeout: 5000 });
+                } else {
+                    fetchIpLocation().then(ipLoc => {
+                        if (ipLoc && leafletMap) {
+                            mapSelectedCoords = { lat: ipLoc.lat, lng: ipLoc.lng };
+                            leafletMap.setView([ipLoc.lat, ipLoc.lng], 14);
+                        }
+                    });
+                }
             }
         }, 200);
     });
@@ -680,15 +792,24 @@ function initInteractiveMapModal() {
 
     if (mapLocateSelfBtn) {
         mapLocateSelfBtn.addEventListener("click", () => {
+            mapAddressVal.textContent = "Определение местоположения...";
             if (navigator.geolocation) {
-                mapAddressVal.textContent = "Определение местоположения...";
                 navigator.geolocation.getCurrentPosition((pos) => {
                     const lat = pos.coords.latitude;
                     const lng = pos.coords.longitude;
                     if (leafletMap) leafletMap.setView([lat, lng], 17);
-                }, () => {
-                    alert("Не удалось определить местоположение.");
-                }, { enableHighAccuracy: true, timeout: 8000 });
+                }, async () => {
+                    const ipLoc = await fetchIpLocation();
+                    if (ipLoc && leafletMap) {
+                        leafletMap.setView([ipLoc.lat, ipLoc.lng], 15);
+                    } else {
+                        mapAddressVal.textContent = "Нажмите на карту для выбора местоположения";
+                    }
+                }, { enableHighAccuracy: true, timeout: 6000 });
+            } else {
+                fetchIpLocation().then(ipLoc => {
+                    if (ipLoc && leafletMap) leafletMap.setView([ipLoc.lat, ipLoc.lng], 15);
+                });
             }
         });
     }

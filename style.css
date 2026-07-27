@@ -50,6 +50,13 @@ html, body {
     justify-content: center;
     align-items: flex-start;
     overflow-x: hidden;
+    width: 100%;
+}
+
+@media (max-width: 480px) {
+    html, body {
+        background-color: var(--bg-main);
+    }
 }
 
 /* Mobile-only Viewport Wrapper */
@@ -63,6 +70,7 @@ html, body {
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
+    overflow-x: hidden;
 }
 
 /* Ripple Effect Styles */
@@ -271,15 +279,16 @@ html, body {
 /* 2-Column Grid Layout for Square / Vertical Product Cards */
 .products-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
 }
 
-/* Slightly Taller Vertical Product Card */
+/* Taller Vertical Product Card */
 .product-card {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
-    padding: 12px;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -287,7 +296,10 @@ html, body {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     user-select: none;
-    min-height: 310px;
+    min-height: 295px;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -360,10 +372,12 @@ html, body {
     display: flex;
     flex-direction: column;
     flex: 1;
+    min-width: 0;
+    width: 100%;
 }
 
 .card-title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-primary);
     line-height: 1.25;
@@ -371,6 +385,8 @@ html, body {
     overflow: hidden;
     text-overflow: ellipsis;
     margin-bottom: 4px;
+    min-width: 0;
+    width: 100%;
 }
 
 .card-desc {
@@ -385,6 +401,7 @@ html, body {
     overflow: hidden;
     margin-bottom: 8px;
     min-height: 28px;
+    word-break: break-word;
 }
 
 .card-price-row {
@@ -1221,6 +1238,42 @@ html, body {
     color: var(--text-primary);
 }
 
+.map-search-bar {
+    position: relative;
+    padding: 10px 16px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+.map-search-icon {
+    position: absolute;
+    left: 28px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+.map-search-bar input {
+    width: 100%;
+    height: 40px;
+    background: var(--bg-main);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0 12px 0 36px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    outline: none;
+    transition: var(--transition-fast);
+}
+
+.map-search-bar input:focus {
+    border-color: var(--accent-green);
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
 .map-view-wrapper {
     position: relative;
     flex: 1;
@@ -1323,4 +1376,237 @@ html, body {
 
 .confirm-location-btn:hover {
     background: var(--accent-green-hover);
+}
+
+/* ==========================================
+   RESPONSIVE MEDIA QUERIES FOR ALL MOBILE PHONES
+   ========================================== */
+@media (max-width: 414px) {
+    .app-main {
+        padding: 12px;
+    }
+    .products-grid {
+        gap: 8px;
+    }
+    .product-card {
+        padding: 8px;
+        min-height: 285px;
+    }
+    .card-img-wrapper {
+        height: 125px;
+        margin-bottom: 8px;
+    }
+    .card-title {
+        font-size: 13px;
+    }
+    .card-price {
+        font-size: 14px;
+    }
+    .card-control-bar {
+        height: 38px;
+    }
+}
+
+@media (max-width: 360px) {
+    .app-main {
+        padding: 8px;
+    }
+    .products-grid {
+        gap: 6px;
+    }
+    .product-card {
+        padding: 6px;
+        min-height: 270px;
+        border-radius: var(--radius-md);
+    }
+    .card-img-wrapper {
+        height: 110px;
+    }
+    .card-title {
+        font-size: 12px;
+    }
+    .card-desc {
+        font-size: 10px;
+        min-height: 24px;
+    }
+    .card-price {
+        font-size: 13px;
+    }
+    .card-ctrl-btn {
+        width: 26px;
+        height: 26px;
+    }
+    .card-count-num {
+        font-size: 13px;
+    }
+}
+
+/* ==========================================
+   PWA INSTALL BANNER
+   ========================================== */
+.pwa-install-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    transform: translateY(100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+                opacity 0.4s ease,
+                visibility 0.4s ease;
+    pointer-events: none;
+    padding: 0 12px 16px 12px;
+    display: flex;
+    justify-content: center;
+}
+
+.pwa-install-banner.visible {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
+.pwa-install-banner.hiding {
+    transform: translateY(120%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.pwa-install-content {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+    box-shadow: 0 -4px 30px rgba(15, 23, 42, 0.12),
+                0 4px 16px rgba(16, 185, 129, 0.1);
+    animation: installBannerGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes installBannerGlow {
+    0% { box-shadow: 0 -4px 30px rgba(15, 23, 42, 0.12), 0 4px 16px rgba(16, 185, 129, 0.1); }
+    100% { box-shadow: 0 -4px 30px rgba(15, 23, 42, 0.15), 0 6px 24px rgba(16, 185, 129, 0.2); }
+}
+
+.pwa-install-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.pwa-install-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pwa-install-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.pwa-install-text h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pwa-install-text p {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pwa-install-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.pwa-install-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 16px;
+    height: 38px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #ffffff;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    transition: var(--transition-fast);
+    white-space: nowrap;
+}
+
+.pwa-install-btn:hover {
+    background: linear-gradient(135deg, #059669, #047857);
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+}
+
+.pwa-install-btn:active {
+    transform: scale(0.96);
+}
+
+.pwa-dismiss-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.pwa-dismiss-btn:hover {
+    background: #e2e8f0;
+    color: var(--text-primary);
+}
+
+/* Dark mode preference for banner */
+@media (prefers-color-scheme: dark) {
+    .pwa-install-content {
+        background: rgba(30, 41, 59, 0.95);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+    .pwa-install-text h3 {
+        color: #f1f5f9;
+    }
+    .pwa-install-text p {
+        color: #94a3b8;
+    }
+    .pwa-dismiss-btn {
+        background: #334155;
+        border-color: #475569;
+        color: #94a3b8;
+    }
 }
